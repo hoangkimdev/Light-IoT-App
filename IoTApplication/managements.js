@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, Image, TextInput, TouchableOpacity, Dimensions, FlatList, Switch, ImageBackground } from 'react-native';
+import { Slider, Text, View, StyleSheet, Image, TextInput, TouchableOpacity, Dimensions, FlatList, Switch, ImageBackground } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -14,7 +14,9 @@ import * as Font from 'expo-font';
 import { FlatGrid, SectionGrid } from 'react-native-super-grid';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scrollview';
 // import * as Progress from 'react-native-progress';
-import ProgressBar from 'react-native-progress/Bar';
+//import ProgressBar from 'react-native-progress/Bar';
+
+// import Slider from '@react-native-community/slider';
 
 var firebaseConfig = {
   apiKey: "AIzaSyALHh1hMM3BCqJ3c7SR_6XLVtwuwjc27sU",
@@ -30,9 +32,16 @@ var firebaseConfig = {
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
+const myStorage = {
+  setItem: (key, item) => {
+    myStorage[key] = item;
+  },
+  getItem: (key) => myStorage[key],
+  removeItem: (key) => {
+    delete myStorage[key];
+  },
+};
 
-
-// class for receiving data from firebase
 class User {
   constructor(fullName, email, phone, userName) {
     this.fullName = fullName;
@@ -69,6 +78,7 @@ var DListhistory = [];
 var DListIdRoom = [];
 var idRoom = [];
 var DSystemHistory = [], listSystemHistory = [], arrayDate = [], arrayLevelLight = [];
+var DListNameRoom = [];
 
 // function data() {
 
@@ -142,20 +152,9 @@ function ReadUserData(id) {
     for(var sys of listSystemHistory){
       arrayLevelLight.push(sys.levelLight);
     }
-    // console.log('===============aa============');
-    // for(var sys of arrayDate){
-    //   console.log(sys);
-    // }
-    //console.log(Object.entries(DSystemHistory[DListIdRoom.indexOf(idRoom)]).map(item => item[1]));
+    
   });
 
-  // for(var i =0;i<listroomID.length;i=i+1){
-  //   firebase.database().ref('listRooms/' + listroomID[i]).on('value', function (snap) {
-  //     roomDataOfUser = Object.entries(snap.val());
-  //     listroomID = roomDataOfUser.map(item => item[0]);
-      
-  //   });
-  // }
 }
 
 
@@ -223,7 +222,7 @@ function StackMain() {
 
 function VDevice({ item }) {
   // const [count, setCount] = useState(item.stateB=="1"? 1: 0);
-  if (item.status == true) {
+  if (item.valueS > 0) {
     return (
       <View style={{
         flex: 1,
@@ -293,6 +292,7 @@ function RoomScreen({ route, navigation }) {
   let loadpage = false;
   const [nameRoom, setNameRoom] = useState(DBulbs[0][1]);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [brightness, setBrightness] = useState(0);
   // const [acount, setAcount] = useState(false);
   const [bulb, setBulb] = useState(Object.entries(DBulbs[0][2]).map(item => item[1]));
   const [togglebulb, setTogglebulb] = useState(false);
@@ -394,7 +394,7 @@ function RoomScreen({ route, navigation }) {
         style={{ width: '70%' }}
       />
 
-      <View
+      {/* <View
         style={styles.titleR}
       >
         <View style={[styles.titleC, { alignItems: 'center' }]}>
@@ -407,49 +407,25 @@ function RoomScreen({ route, navigation }) {
             style={{ fontSize: 16, fontFamily: 'google-bold', color: '#808080' }}
           >by handwork</Text>
         </View>
-      </View>
+      </View> */}
       <View
         style={{ marginTop: '2%', alignItems: 'center' }}
       >
-        <Switch
+        {/* <Switch
           trackColor={{ false: "#767577", true: "#81b0ff" }}
           thumbColor={isEnabled ? "#f5dd4b" : "#f4f3f5"}
           ios_backgroundColor="#3e3e3e"
           onValueChange={toggleSwitch}
           value={isEnabled}
-        />
+        /> */}
+        <Text style={{fontSize: 80}}>
+
+        </Text>
+        
       </View>
-      {/* <View
-        style={styles.Viewdevice}
-      >
-        <FlatList
-          keyExtractor={item => item.idevice}
-          data={bulb}
-          style={[styles.ItemDevicesList]}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                if (isEnabled) {
-                  item.status = !(item.status);
-                  loadpage = !togglebulb;
-                  let bulbsRef = firebase.database().ref('listRooms/' + DBulbs[serialRoom][0] + '/listBulbs/' + item.bulbsID);
-                  bulbsRef.update({ status: item.status }).then().catch();
-                  setTogglebulb(loadpage);
-                }
-              }}
-              style={styles.ItemDevice}
-            >
-              <VDevice item={item} />
-            </TouchableOpacity>
-
-          )}
-          numColumns={numcol}
-        />
-      </View> */}
-
       <View style={styles.boxOne}>
         <FlatGrid
-          itemDimension={60}
+          itemDimension={250}
           data={bulb}
           style={styles.gridFlat}
           // staticDimension={300}
@@ -457,14 +433,62 @@ function RoomScreen({ route, navigation }) {
           spacing={10}
           renderItem={({ item }) => (
             <View >
+            <Slider 
+              style={{width: 250, height: 30}}
+              maximumValue={255}
+              minimumValue={0}
+              minimumTrackTintColor="#307ecc"
+              maximumTrackTintColor="#000000"
+              step={1}
+              value={parseInt(item.valueS)}
+              onValueChange={(bright) => {
+                
+                item.valueS = bright.toString();
+                loadpage = !togglebulb;
+                // setBrightness(bright);
+                let bulbsRef = firebase.database().ref('listRooms/' + DBulbs[serialRoom][0] + '/listBulbs/' + item.bulbsID);
+                var valueF = "0";
+                if (item.valueS > 0){
+                  valueF = "1"
+                }
+                else{
+                  valueF = "0"
+                }
+                bulbsRef.update( {valueF: valueF , valueS: item.valueS }).then().catch();
+                setTogglebulb(loadpage);
+                
+        
+                item ={
+                  device_key : item.bulbsID,
+
+
+
+                  //device_id: item.bulbsName,
+                  device_id: "nhom2",   //cua thay
+
+
+
+                  values: [valueF, item.valueS]
+                }
+                var data = JSON.stringify(item);
+                const axios = require('axios');
+                //ip-kim: 192.168.0.5
+
+                axios.post('http://192.168.0.5:8080/api', {data})
+                    .then(function (response) {
+                    console.log(response);
+                  })
+                  .catch(function (error) {
+                    console.log(error);
+                  });
+            }}
+            />
               <TouchableOpacity
                 onPress={() => {
                   if (isEnabled) {
-                    item.status = !(item.status);
-                    loadpage = !togglebulb;
-                    let bulbsRef = firebase.database().ref('listRooms/' + DBulbs[serialRoom][0] + '/listBulbs/' + item.bulbsID);
-                    bulbsRef.update({ status: item.status }).then().catch();
-                    setTogglebulb(loadpage);
+                    
+                    
+                    
                   }
                 }}
                 style={styles.ItemDevice}
