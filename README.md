@@ -43,7 +43,7 @@ listUsers
   * - userID*   
   * - username  
   * - password  
-  * - name  
+  * - fullname  
   * - email  
   * listRooms  
     * - roomsName   
