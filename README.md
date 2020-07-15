@@ -37,7 +37,7 @@ listSensors
   * - values  
   * sensorHistory   
     * [date]:  
-      * -[time]: [values-of-sensor]  
+      * - [time]: [values-of-sensor]  
 
 listUsers  
   * - userID*   
