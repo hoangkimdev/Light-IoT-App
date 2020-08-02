@@ -14,19 +14,29 @@ export default function ManageAccount({ navigation }) {
 
 
     const [fontLoaded, setFontLoaded] = useState(false);
-    const [toogle, setToogle] = useState('false');
+    const [toogle, setToogle] = useState(false);
+    const [users, setUsers] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [bulbs, setBulbs] = useState([]);
     const [roomChoose, setRoomChoose] = useState('');
+    const [roomIdChoose, setRoomIdChoose] = useState('');
+    const [intensity, setIntensity] = useState('');   
     const [bulbVisible, setBulbVisible] = useState(false);
     const [firstPush, setFirstPush] = useState(true);
 
     useEffect(() => {
+        firebase.database().ref('/users').once('value', (snap) => {
+            if (snap.val() != null) {
+                setUsers(Object.entries(snap.val()).map(item => item[1]));
+            }
+        });
+
         firebase.database().ref('/listRooms').once('value', (snap) => {
             if (snap.val() != null) {
                 setRooms(Object.entries(snap.val()).map(item => item[1]));
             }
         });
+
     }, [toogle]);
 
     const emptyAdd = (param) => {
@@ -34,6 +44,48 @@ export default function ManageAccount({ navigation }) {
         dataTmp.push({});
         return dataTmp;
     };
+    
+    const getKeyByRoomNameInListRoom = (roomNameParam) => {
+        const objFinder = rooms.find(item => item.roomsName == roomNameParam);
+        return [objFinder.roomsID,objFinder.lightSensorID];
+    }
+
+    const removeRoom = (roomNameParam) => {
+
+        // Delete room in list of rooms
+
+        let fKey = getKeyByRoomNameInListRoom(roomNameParam);
+        firebase.database().ref('/listRooms/' + fKey[0]).remove();
+
+        // Delete sensor in list of rooms
+
+        firebase.database().ref('/listSensors/' + fKey[1]).remove();
+
+        // Delete room in list of users
+        for(let i=0; i<users.length; i++){
+
+            let tmp = users[i];
+
+            if(tmp.listRooms == null || tmp.listRooms==undefined) continue;
+            let idRoot = tmp.idRoot;
+            let arrListRoom = Object.entries(tmp.listRooms);
+
+            const roomFinder = arrListRoom.find(item => item[1].roomsName == roomNameParam);
+
+            if(roomFinder!=null && roomFinder!=undefined){
+                firebase.database().ref('/users/' + idRoot + '/listRooms/' + roomFinder[0]).remove();
+            }
+        }
+
+        setToogle(!toogle);
+        navigation.navigate('ManageAccount');
+    }
+
+    const updateIntensity = (roomIdParam, value) =>{
+        firebase.database().ref('/listRooms/'+roomIdParam).update({
+            levelLight: value === '' ? '0' : value,
+        });
+    }
 
     if (fontLoaded) {
 
@@ -42,7 +94,7 @@ export default function ManageAccount({ navigation }) {
             <View style={styles.container}>
 
                 <View style={styles.header1}>
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         onPress={() => setToogle(!toogle)}
                         style={{
                             width: 40,
@@ -74,7 +126,7 @@ export default function ManageAccount({ navigation }) {
                             resizeMode='contain'
                             style={{ width: '40%' }}
                         />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
 
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Home')}
@@ -124,12 +176,15 @@ export default function ManageAccount({ navigation }) {
                         renderItem={({ item }) => (
                             <View >
                                 <TouchableOpacity
+                                    
                                     onPress={() => {
                                         setBulbVisible(true);
                                         setFirstPush(false);
                                         if (item.roomsName != null) {
                                             setBulbs(Object.values(item.listBulbs));
                                             setRoomChoose(item.roomsName);
+                                            setRoomIdChoose(item.roomsID);
+                                            setIntensity(item.levelLight);
                                         } else {
                                             setBulbVisible(false);
                                             setBulbs([]);
@@ -138,6 +193,7 @@ export default function ManageAccount({ navigation }) {
                                         }
 
                                     }}
+
 
                                     style={(item.roomsName == roomChoose) ? styles.select : styles.noSelect}
                                 >
@@ -164,13 +220,14 @@ export default function ManageAccount({ navigation }) {
                     />
                 </View>
 
-
                 <View style={styles.boxTwo}>
                     <Text
-                        style={{
+                        style={roomChoose!='' ?{
                             fontFamily: 'google-bold',
                             fontSize: 20,
                             color: '#404040'
+                        } : {
+                            fontSize: 0
                         }}
                     >Devices</Text>
                 </View>
@@ -216,9 +273,85 @@ export default function ManageAccount({ navigation }) {
                     />
                 </View>
 
-
                 <View style={styles.boxTwo}>
+                    <Text
+                        style={roomChoose!='' ?{
+                            fontFamily: 'google-bold',
+                            fontSize: 20,
+                            color: '#404040'
+                        } : {
+                            fontSize: 0
+                        }}
+                    >Intensity / Remove</Text>
                 </View>
+                
+                <View style={ styles.boxThree}>
+                    
+                    <TextInput
+                        keyboardType={'decimal-pad'}
+                        placeholder={'Bulb name'}
+                        defaultValue={intensity}
+                        onChangeText={(val) => updateIntensity(roomIdChoose, val)}
+                        style={roomChoose!='' ? {
+                            fontFamily: 'google-bold',
+                            fontSize: 20,
+                            width: 245,
+                            height: 45,
+                            backgroundColor: '#e7e6e6',
+                            borderRadius: 12,
+                            color: '#404040',
+                            textAlign: 'center',
+                            //margin: 10
+                        } : {
+                            width: 0,
+                            height: 0,
+                        }}
+                    />
+
+                    <TouchableOpacity 
+                        onPress={() => {
+                            Alert.alert(
+                                'Confirmation ',
+                                'Are you want to remove this room?',
+                                [
+                                  {
+                                    text: 'Cancel',
+                                    onPress: () => console.log('Cancel Pressed'),
+                                    style: 'cancel'
+                                  },
+                                  { text: 'OK', onPress: () => removeRoom(roomChoose) }
+                                ],
+                                { cancelable: false }
+                              );
+                        }}
+
+                        style={ roomChoose!='' ? {
+                            width: 45,
+                            height: 45,
+                            backgroundColor: "#f55353",
+                            color: "#404040",
+                            marginStart: 10,
+                            borderRadius: 12,
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        } : {
+                            width: 0,
+                            height: 0
+                        }
+                        
+                    }>
+                        <Image source={require('./assets/bin.png')}
+                            style={{
+                                resizeMode: 'contain',
+                                width: 20,
+                                height: 20,
+                            }}
+                        />
+                    </TouchableOpacity>
+                </View>
+
+                {/* <View style={styles.boxTwo}>
+                </View> */}
 
                 <View style={styles.footer}>
 
@@ -269,7 +402,7 @@ const styles = StyleSheet.create({
         height: 60,
         backgroundColor: '#f5f5f5',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
     },
     container: {
         flex: 1,
@@ -280,7 +413,7 @@ const styles = StyleSheet.create({
     boxOne: {
         // flex: 1,
         width: 320,
-        height: 150,
+        height: 114,
         backgroundColor: '#f5f5f5',
         // paddingTop: 30,
 
@@ -291,6 +424,7 @@ const styles = StyleSheet.create({
         height: 20,
         alignItems: 'center',
         justifyContent: 'center',
+        // backgroundColor: 'red'
     },
     item: {
         flexDirection: 'row',
@@ -372,4 +506,12 @@ const styles = StyleSheet.create({
         height: 30,
         marginBottom: 30
     },
+    boxThree: {
+        flexDirection: 'row',
+        width: '100%',
+        height: 70,
+        alignItems: 'center',
+        marginLeft: 10
+    },
+    
 });

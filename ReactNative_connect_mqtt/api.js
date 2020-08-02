@@ -5,7 +5,7 @@ var deviceModel = require("./bulbModel")
 
 router.post('/', (req, res) => {
     console.log("API");
-    console.log(req.body.data);
+    //console.log(req.body.data);
     var deviceData = JSON.parse(req.body.data);
     publish.Publisher(deviceData);
     //deviceModel.updateDevice(deviceData);

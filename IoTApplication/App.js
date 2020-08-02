@@ -9,6 +9,7 @@ import AddDeviceRoom from './addDeviceRoom';
 import Scheduled from './schedule';
 import ManagementView from './managements';
 
+console.disableYellowBox = true;
 export default function App() {
   return (
     // <Home/>

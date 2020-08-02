@@ -4,7 +4,7 @@ const deviceModel = require('./bulbModel');
 function Publisher(obj) {
 	var mqtt = require('mqtt')
 	var client = mqtt.connect({
-		host: '52.187.125.59',
+		host: '52.230.1.253',
 		port: 1883,
 		username: 'BKvm',
 		password: 'Hcmut_CSE_2020'

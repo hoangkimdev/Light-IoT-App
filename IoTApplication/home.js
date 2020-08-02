@@ -193,13 +193,13 @@ export default function Home({ navigation }) {
                                 left: '15%',
                             }}
                         >
-                            <Text style = {{ 
+                            {/* <Text style = {{ 
                                 fontFamily: 'google-bold',
                                 fontSize: 15,
                                 textDecorationLine: 'underline',
                                 color: '#ddd' 
                             }}
-                            >Forgot password</Text>
+                            >Forgot password</Text> */}
                         </TouchableOpacity>
                         
                         <TouchableOpacity 

@@ -20,6 +20,8 @@ export default function AddDeviceRoom({ navigation }) {
     const [bulbsName, setBulbsName] = useState('');
     const [roomName, setRoomName] = useState('');
     const [sensorID, setSensorID] = useState('');
+    const [intensity, setIntensity] = useState('');
+    const [listSensors, setListSensors] = useState([]);
 
     useEffect(() => {
         firebase.database().ref('/listRooms').once('value', (snap) => {
@@ -27,14 +29,19 @@ export default function AddDeviceRoom({ navigation }) {
                 setRooms(Object.entries(snap.val()).map(item => item[1].roomsName));
             }
         });
+        firebase.database().ref('/listSensors').once('value', (snap)=>{
+            if (snap.val() != null) {
+                setListSensors(Object.entries(snap.val()).map(item => item[0]));
+            }
+        });
     }, []);
 
     const [resBulb, setResBulb] = useState([]);
 
-    const addRoomData = (roomNameParam, sensorIDParam, id) => {
+    const addRoomData = (roomNameParam, sensorIDParam, id, levelParam) => {
         // let id = uuid.v4();
         firebase.database().ref('/listRooms/' + id).set({
-            levelLight: '5',
+            levelLight: levelParam,
             lightSensorID: sensorIDParam,
             roomsID: id,
             roomsName: roomNameParam
@@ -47,9 +54,29 @@ export default function AddDeviceRoom({ navigation }) {
         firebase.database().ref('/listRooms/' + node + '/listBulbs/' + id).set({
             bulbsID: id,
             bulbsName: bulbsNameParam,
-            status: false
+            status: false,
+            valueF: "0",
+            valueS: "0"
         })
     }
+
+    const addSensorData = (idParam) => {
+        var time = new Date();
+        var currentDate = time.toISOString().split('T')[0];
+        var currentTime = time.toLocaleTimeString('en-US', { hour12: false });
+        
+        firebase.database().ref('/listSensors/'+ idParam).set({
+            device_id: idParam,
+            values: "0",
+            // sensorHistory: {
+            //     [currentDate]: {
+            //         [currentTime]: "1",
+            //         [time.getHours()+":"+time.getMinutes()+":"+(time.getSeconds()+1)]: "0",
+            //     }
+            // }
+        })
+    }
+    
 
     if (fontLoaded) {
         return (
@@ -83,10 +110,16 @@ export default function AddDeviceRoom({ navigation }) {
                         onChangeText={(val) => setRoomName(val)}
                     />
                     <TextInput
-                        keyboardType={'decimal-pad'}
-                        placeholder={'Sensor ID'}
+                        keyboardType={'default'}
+                        placeholder={'Sensor id'}
                         style={styles.textInput}
                         onChangeText={(val) => setSensorID(val)}
+                    />
+                    <TextInput
+                        keyboardType={'decimal-pad'}
+                        placeholder={'Intensity'}
+                        style={styles.textInput}
+                        onChangeText={(val) => setIntensity(val)}
                     />
                 </View>
 
@@ -104,7 +137,7 @@ export default function AddDeviceRoom({ navigation }) {
 
                 <View style={styles.boxThree}>
                     <TextInput
-                        keyboardType={'decimal-pad'}
+                        keyboardType={'default'}
                         placeholder={'Bulb name'}
                         onChangeText={(val) => setBulbsName(val)}
                         value={bulbsName}
@@ -125,13 +158,14 @@ export default function AddDeviceRoom({ navigation }) {
                 <View style={styles.boxThree}>
                     <TouchableOpacity
                         onPress={() => {
-                            if (bulbsName != '' && !resBulb.includes('B' + bulbsName)) {
+                            if (bulbsName != '' && !resBulb.includes(bulbsName)) {
                                 let tmp = resBulb;
-                                tmp.push('B' + bulbsName);
+                                tmp.push(bulbsName);
                                 setResBulb(tmp);
                                 setToogle(!toogle);
                                 setBulbsName('');
                             }
+                            else Alert.alert('OOPS', 'Bulb duplicates');
 
                         }}
                         style={{
@@ -167,6 +201,12 @@ export default function AddDeviceRoom({ navigation }) {
                         renderItem={({ item }) => (
                             <View>
                                 <TouchableOpacity
+                                    onPress={() => {
+                                        let tmp = resBulb;
+                                        tmp = tmp.filter(el => el != item)
+                                        setResBulb(tmp);
+                                        setToogle(!toogle); 
+                                    }}
                                     style={styles.on}
                                 >
                                     <Image
@@ -194,12 +234,14 @@ export default function AddDeviceRoom({ navigation }) {
                 <View style={styles.boxThree}>
                     <TouchableOpacity
                         onPress={() => {
-                            if (roomName == '' || sensorID == '') Alert.alert('OOPS', 'Enter your room name and sensor id');
+                            if (roomName.trim() == '' || sensorID.trim() == '' || intensity.trim() == '') Alert.alert('OOPS', 'Enter your room name, sensor id and intensity');
+                            else if(listSensors.includes(sensorID) ) Alert.alert('OOPS', 'Sensor id has been existed');
                             else {
                                 let id = uuid.v4();
-                                addRoomData(roomName, 'S' + sensorID, id);
+                                addRoomData(roomName, sensorID, id, intensity);
+                                addSensorData(sensorID);
                                 resBulb.map(item => addBulbData(item, id));
-                                navigation.navigate('ManageDevice')
+                                navigation.navigate('ManageAccount');
                             }
                         }}
                         style={{
@@ -267,8 +309,8 @@ const styles = StyleSheet.create({
     },
     textInput: {
         fontFamily: 'google-bold',
-        fontSize: 20,
-        width: 140,
+        fontSize: 14,
+        width: 85,
         height: 45,
         backgroundColor: '#e7e6e6',
         borderRadius: 15,

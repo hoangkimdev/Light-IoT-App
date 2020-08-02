@@ -20,6 +20,7 @@ export default function ManageAccount({ navigation }) {
     const [openModal, setOpenModal] = useState(false);
 
     useEffect(() => {
+
         BackHandler.addEventListener("hardwareBackPress", function () { return true; });
 
         firebase.database().ref('/users').once('value', (snap) => {
@@ -96,7 +97,7 @@ export default function ManageAccount({ navigation }) {
             <View style={styles.container}>
 
                 <View style={styles.header}>
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         onPress={() => setToogle(!toogle)}
                         style={{
                             width: 40,
@@ -128,7 +129,7 @@ export default function ManageAccount({ navigation }) {
                             resizeMode='contain'
                             style={{ width: '40%' }}
                         />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
 
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Home')}
@@ -214,8 +215,24 @@ export default function ManageAccount({ navigation }) {
                                         <View style={styles.option}>
                                             <TouchableOpacity
                                                 onPress={() => {
-                                                    remmoveNode(param.idRoot);
-                                                    setToogle(!toogle);
+                                                    Alert.alert(
+                                                        'Confirmation ',
+                                                        'Are you want to remove this account?',
+                                                        [
+                                                          {
+                                                            text: 'Cancel',
+                                                            onPress: () => console.log('Cancel Pressed'),
+                                                            style: 'cancel'
+                                                          },
+                                                          { text: 'OK', onPress: () => {
+                                                            remmoveNode(param.idRoot);
+                                                            setToogle(!toogle);
+                                                            navigation.navigate('ManageAccount');
+                                                          } }
+                                                        ],
+                                                        { cancelable: false }
+                                                      );
+                                                    
                                                 }}
                                                 style={{
                                                     width: 130,
@@ -314,7 +331,7 @@ const styles = StyleSheet.create({
         height: 60,
         backgroundColor: '#f5f5f5',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
     },
     container: {
         flex: 1,
